@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  USER
+  ADMIN
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  GITHUB
+}
+
+enum AssetType {
+  LOAN
+  FIXED_DEPOSIT
+  STOCK
+  MUTUAL_FUND
+}
+
+enum LoanStatus {
+  APPLIED
+  APPROVED
+  DISBURSED
+  REJECTED
+  CLOSED
+}
+
+enum TransactionType {
+  BUY
+  SELL
+  DEPOSIT_FD
+  LOAN_PAYMENT
+  DIVIDEND
+  INTEREST_CREDIT
+}
+
+// Models
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  passwordHash String?      // Nullable for OAuth users (who don't have a password)
+  provider     AuthProvider @default(EMAIL)
+  providerId   String?      // External ID from Google/GitHub if used
+  role         Role         @default(USER)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  assets       Asset[]
+  transactions Transaction[] // Global transaction log
+}
+
+// Abstract-like Asset model (Single Table Inheritance strategy or separate tables?
+// Using mapped types for cleaner relational structure)
+model Asset {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  type      AssetType
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations to specific asset details
+  loanDetails         LoanDetails?
+  fdDetails           FixedDepositDetails?
+  investmentDetails   InvestmentDetails?
+  
+  transactions Transaction[]
+}
+
+model LoanDetails {
+  id              String     @id @default(uuid())
+  assetId         String     @unique
+  asset           Asset      @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  principalAmount Float
+  interestRate    Float
+  tenureMonths    Int
+  startDate       DateTime
+  status          LoanStatus @default(APPLIED)
+  emiAmount       Float?     // Calculated and stored
+}
+
+model FixedDepositDetails {
+  id              String   @id @default(uuid())
+  assetId         String   @unique
+  asset           Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  principalAmount Float
+  interestRate    Float
+  startDate       DateTime
+  maturityDate    DateTime
+  maturityAmount  Float?   // Projected
+}
+
+model InvestmentDetails {
+  id              String   @id @default(uuid())
+  assetId         String   @unique
+  asset           Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  symbol          String   // e.g., "RELIANCE.NS"
+  averageBuyPrice Float    @default(0)
+  quantity        Float    @default(0)
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  assetId     String?
+  asset       Asset?          @relation(fields: [assetId], references: [id])
+  
+  type        TransactionType
+  amount      Float
+  pricePerUnit Float?         // Optional, for stocks/MF
+  quantity    Float?          // Optional, for stocks/MF
+  date        DateTime        @default(now())
+  notes       String?
+}

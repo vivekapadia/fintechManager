@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # Database Service
+  db:
+    image: postgres:15-alpine
+    container_name: fintech-db
+    environment:
+      POSTGRES_USER: admin # Default superuser
+      POSTGRES_PASSWORD: password123 # dev password (change in prod)
+      POSTGRES_DB: fintech # Database name
+    ports:
+      - "5432:5432" # Expose port 5432 to host for DBeaver/Prisma Studio
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fintech-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin -d fintech" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (NestJS)
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: fintech-api
+    ports:
+      - "4000:3000"
+    environment:
+      DATABASE_URL: "postgresql://admin:password123@db:5432/fintech?schema=public"
+      JWT_SECRET: "super-secret-key"
+      ENGINE_URL: "http://engine:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - fintech-network
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+
+  # Calculation Engine (Python)
+  engine:
+    build:
+      context: ./apps/engine
+      dockerfile: Dockerfile
+    container_name: fintech-engine
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+    networks:
+      - fintech-network
+    volumes:
+      - ./apps/engine:/app
+
+  # Frontend (React)
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: fintech-web
+    ports:
+      - "3000:5173"
+    environment:
+      VITE_API_URL: "http://localhost:4000"
+    depends_on:
+      - api
+    networks:
+      - fintech-network
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+
+  # Monitoring: Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fintech-prometheus
+    volumes:
+      - ./docker/prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - fintech-network
+
+  # Monitoring: Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: fintech-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - fintech-network
+    depends_on:
+      - prometheus
+
+networks:
+  fintech-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

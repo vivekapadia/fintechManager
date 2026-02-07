@@ -1,0 +1,23 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "pipeline": {
+        // Build Task: Depends on the 'build' task of all dependencies (^build)
+        "build": {
+            "dependsOn": [
+                "^build"
+            ],
+            "outputs": [
+                "dist/**",
+                ".next/**",
+                "!.next/cache/**"
+            ]
+        },
+        // Lint Task: Runs linting on all packages
+        "lint": {},
+        // Dev Task: Starts local development server
+        "dev": {
+            "cache": false, // Do not cache dev server execution
+            "persistent": true // Keeps the process running (long-lived)
+        }
+    }
+}
