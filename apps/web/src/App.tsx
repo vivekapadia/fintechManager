@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import PortfolioPage from './pages/portfolio/PortfolioPage';
 
 // ... imports
 
@@ -34,6 +35,7 @@ function App() {
 
                     <Route element={<ProtectedRoute />}>
                         <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/portfolio" element={<PortfolioPage />} />
                         <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     </Route>
                 </Routes>
