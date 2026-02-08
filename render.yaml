@@ -22,8 +22,8 @@ services:
   - type: web
     name: fintech-engine
     env: docker
-    dockerContext: apps/engine
-    dockerfilePath: apps/engine/Dockerfile # Path is relative to ROOT, even with custom context
+    dockerContext: . # Standard Root Context
+    dockerfilePath: apps/engine/Dockerfile # Explicit path from root
     plan: free
     envVars:
       - key: PORT
