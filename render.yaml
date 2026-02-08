@@ -22,8 +22,8 @@ services:
   - type: web
     name: fintech-engine
     env: docker
-    dockerContext: apps/engine # Scope context to just the engine folder
-    dockerfilePath: Dockerfile # Relative to context
+    dockerContext: . # Root context is safer for monorepos
+    dockerfilePath: apps/engine/Dockerfile # Explicit path from root, not context
     plan: free
     envVars:
       - key: PORT
