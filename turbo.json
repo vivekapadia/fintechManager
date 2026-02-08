@@ -1,6 +1,6 @@
 {
     "$schema": "https://turbo.build/schema.json",
-    "pipeline": {
+    "tasks": {
         // Build Task: Depends on the 'build' task of all dependencies (^build)
         "build": {
             "dependsOn": [
