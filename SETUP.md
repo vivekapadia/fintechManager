@@ -70,6 +70,24 @@ npm run start:dev
 *   Server listens on: `http://localhost:3000`
 *   Health Check: `http://localhost:3000/health`
 
+### 4. Start Analytics Engine (Python)
+Open a **new terminal** and run:
+```bash
+cd apps/engine
+# Linux/Mac
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python main.py
+
+# Windows
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
+```
+*   Server listens on: `http://127.0.0.1:8000`
+
 ### 4. Start Frontend
 Open a **new terminal** and run:
 ```bash

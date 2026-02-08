@@ -108,8 +108,8 @@ export default function PortfolioPage() {
                             key={type}
                             onClick={() => setAssetType(type)}
                             className={`px-3 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap ${assetType === type
-                                    ? 'bg-white text-blue-600 shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-700'
+                                ? 'bg-white text-blue-600 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             {type.replace('_', ' ')}
@@ -247,7 +247,7 @@ export default function PortfolioPage() {
                                     <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{asset.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                                         {asset.type === 'FIXED_DEPOSIT' ? (
-                                            <span>Matures: {new Date(asset.fixedDepositDetails?.maturityDate).toLocaleDateString()}</span>
+                                            <span>Matures: {new Date(asset.fdDetails?.maturityDate).toLocaleDateString()}</span>
                                         ) : asset.type === 'LOAN' ? (
                                             <span>{asset.loanDetails?.tenureMonths} Months @ {asset.loanDetails?.interestRate}%</span>
                                         ) : (
@@ -256,7 +256,7 @@ export default function PortfolioPage() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                                         {asset.type === 'FIXED_DEPOSIT' ? (
-                                            <span>{formatCurrency(asset.fixedDepositDetails?.principalAmount)}</span>
+                                            <span>{formatCurrency(asset.fdDetails?.principalAmount)}</span>
                                         ) : asset.type === 'LOAN' ? (
                                             <span>{formatCurrency(asset.loanDetails?.principalAmount)} (EMI: {formatCurrency(asset.loanDetails?.emiAmount)})</span>
                                         ) : (

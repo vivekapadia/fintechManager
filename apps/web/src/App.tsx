@@ -4,27 +4,9 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import PortfolioPage from './pages/portfolio/PortfolioPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
+import Layout from './components/Layout';
 
-// ... imports
-
-/**
- * Dashboard Component (Protected).
- * This is the main view user sees after logging in.
- */
-function Dashboard() {
-    return (
-        <div className="p-8">
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="mt-4">Welcome to Fintech Manager! You are logged in.</p>
-        </div>
-    );
-}
-
-/**
- * Main Application Component.
- * Sets up the Router and AuthProvider.
- * Defines Public Routes (Login/Register) and Protected Routes (Dashboard).
- */
 function App() {
     return (
         <AuthProvider>
@@ -34,9 +16,11 @@ function App() {
                     <Route path="/register" element={<RegisterPage />} />
 
                     <Route element={<ProtectedRoute />}>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/portfolio" element={<PortfolioPage />} />
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        <Route element={<Layout />}>
+                            <Route path="/dashboard" element={<DashboardPage />} />
+                            <Route path="/portfolio" element={<PortfolioPage />} />
+                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        </Route>
                     </Route>
                 </Routes>
             </BrowserRouter>

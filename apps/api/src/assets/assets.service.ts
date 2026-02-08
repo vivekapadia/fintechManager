@@ -193,6 +193,8 @@ export class AssetsService {
             where: { userId },
             include: {
                 investmentDetails: true,
+                fdDetails: true,
+                loanDetails: true,
             },
         });
     }
