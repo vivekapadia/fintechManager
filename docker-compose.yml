@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: password123 # dev password (change in prod)
       POSTGRES_DB: fintech # Database name
     ports:
-      - "5432:5432" # Expose port 5432 to host for DBeaver/Prisma Studio
+      - "5435:5432" # Expose port 5435 to avoid conflicts with local Postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -24,8 +24,8 @@ services:
   # Backend API (NestJS)
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     container_name: fintech-api
     ports:
       - "4000:3000"
@@ -41,6 +41,7 @@ services:
     volumes:
       - ./apps/api:/app
       - /app/node_modules
+      - ./packages/database/prisma:/app/prisma
 
   # Calculation Engine (Python)
   engine:
