@@ -4,6 +4,7 @@ import { CreateStockDto } from './dto/create-stock.dto';
 import { CreateMutualFundDto } from './dto/create-mutual-fund.dto';
 import { CreateFixedDepositDto } from './dto/create-fixed-deposit.dto';
 import { CreateLoanDto } from './dto/create-loan.dto';
+import { UpdateAssetDto } from './dto/update-asset.dto';
 import { AssetType, TransactionType } from '@prisma/client';
 
 @Injectable()
@@ -196,6 +197,115 @@ export class AssetsService {
                 fdDetails: true,
                 loanDetails: true,
             },
+            orderBy: { createdAt: 'desc' }
+        });
+    }
+
+    async remove(id: string, userId: string) {
+        // 1. Verify ownership
+        const asset = await this.prisma.asset.findFirst({
+            where: { id, userId },
+        });
+
+        if (!asset) {
+            throw new Error('Asset not found or access denied');
+        }
+
+        return this.prisma.$transaction(async (prisma) => {
+            // 2. Delete related Transactions first (Manual cleanup)
+            await prisma.transaction.deleteMany({
+                where: { assetId: id },
+            });
+
+            // 3. Delete Asset (Cascades to Details)
+            return prisma.asset.delete({
+                where: { id },
+            });
+        });
+    }
+
+    async update(id: string, userId: string, updateDto: UpdateAssetDto) {
+        const asset = await this.prisma.asset.findFirst({
+            where: { id, userId },
+            include: {
+                investmentDetails: true,
+                fdDetails: true,
+                loanDetails: true,
+            }
+        });
+
+        if (!asset) {
+            throw new Error('Asset not found');
+        }
+
+        return this.prisma.$transaction(async (prisma) => {
+            // 1. Update Base Asset
+            if (updateDto.name) {
+                await prisma.asset.update({
+                    where: { id },
+                    data: { name: updateDto.name }
+                });
+            }
+
+            // 2. Update Details based on Type
+            if (asset.type === AssetType.STOCK || asset.type === AssetType.MUTUAL_FUND) {
+                await prisma.investmentDetails.update({
+                    where: { assetId: id },
+                    data: {
+                        symbol: updateDto.symbol,
+                        quantity: updateDto.quantity,
+                        averageBuyPrice: updateDto.buyPrice,
+                    }
+                });
+            } else if (asset.type === AssetType.FIXED_DEPOSIT) {
+                // Recalculate Maturity if needed
+                let maturityAmount = undefined;
+                if (updateDto.principalAmount || updateDto.interestRate) {
+                    const p = updateDto.principalAmount || asset.fdDetails.principalAmount;
+                    const r = updateDto.interestRate || asset.fdDetails.interestRate;
+                    maturityAmount = p + (p * r * 1) / 100; // Keeping simple logic
+                }
+
+                await prisma.fixedDepositDetails.update({
+                    where: { assetId: id },
+                    data: {
+                        principalAmount: updateDto.principalAmount,
+                        interestRate: updateDto.interestRate,
+                        startDate: updateDto.startDate ? new Date(updateDto.startDate) : undefined,
+                        maturityDate: updateDto.maturityDate ? new Date(updateDto.maturityDate) : undefined,
+                        maturityAmount,
+                    }
+                });
+            } else if (asset.type === AssetType.LOAN) {
+                // Recalculate EMI if needed
+                let emiAmount = undefined;
+                if (updateDto.principalAmount || updateDto.interestRate || updateDto.tenureMonths) {
+                    const p = updateDto.principalAmount || asset.loanDetails.principalAmount;
+                    const rate = updateDto.interestRate || asset.loanDetails.interestRate;
+                    const n = updateDto.tenureMonths || asset.loanDetails.tenureMonths;
+
+                    const r = rate / (12 * 100);
+                    if (rate === 0) {
+                        emiAmount = p / n;
+                    } else {
+                        emiAmount = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+                    }
+                    emiAmount = parseFloat(emiAmount.toFixed(2));
+                }
+
+                await prisma.loanDetails.update({
+                    where: { assetId: id },
+                    data: {
+                        principalAmount: updateDto.principalAmount,
+                        interestRate: updateDto.interestRate,
+                        startDate: updateDto.startDate ? new Date(updateDto.startDate) : undefined,
+                        tenureMonths: updateDto.tenureMonths,
+                        emiAmount,
+                    }
+                });
+            }
+
+            return prisma.asset.findUnique({ where: { id } });
         });
     }
 }

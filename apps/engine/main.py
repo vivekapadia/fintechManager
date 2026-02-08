@@ -99,20 +99,47 @@ def calculate_portfolio(request: PortfolioRequest):
     
     total_net_worth = df['current_value'].sum()
     
-    # Asset Allocation (Positive assets only)
+    # Asset Allocation (Positive assets only - By Value)
     positive_assets = df[df['current_value'] > 0]
     total_positive = positive_assets['current_value'].sum()
     
-    allocation = {}
+    allocation_value = {}
     if total_positive > 0:
-        allocation = positive_assets.groupby('type')['current_value'].sum() / total_positive * 100
-        allocation = allocation.to_dict()
+        allocation_value = positive_assets.groupby('type')['current_value'].sum() / total_positive * 100
+        allocation_value = allocation_value.to_dict()
+
+    # Asset Allocation (By Quantity - Stocks/MF Only)
+    # We only sum quantity for types that have it meaningful
+    qty_assets = df[df['type'].isin(['STOCK', 'MUTUAL_FUND'])]
+    total_qty = qty_assets['quantity'].sum()
+    
+    allocation_qty = {}
+    if total_qty > 0:
+        allocation_qty = qty_assets.groupby('name')['quantity'].sum() / total_qty * 100
+        allocation_qty = allocation_qty.to_dict()
+
+    # Liabilities Allocation
+    liability_assets = df[df['current_value'] < 0]
+    total_liability = abs(liability_assets['current_value'].sum())
+    
+    allocation_liability = {}
+    if total_liability > 0:
+        # We use absolute value for charts
+        liability_assets_abs = liability_assets.copy()
+        liability_assets_abs['current_value'] = liability_assets_abs['current_value'].abs()
+        allocation_liability = liability_assets_abs.groupby('name')['current_value'].sum() / total_liability * 100
+        allocation_liability = allocation_liability.to_dict()
     
     return {
         "net_worth": round(total_net_worth, 2),
         "gross_assets": round(total_positive, 2),
-        "liabilities": round(abs(df[df['current_value'] < 0]['current_value'].sum()), 2),
-        "allocation": {k: round(v, 1) for k, v in allocation.items()}
+        "liabilities": round(total_liability, 2),
+        "allocation": {k: round(v, 1) for k, v in allocation_value.items()}, # Default view
+        "composition": {
+            "by_value": {k: round(v, 1) for k, v in allocation_value.items()},
+            "by_quantity": {k: round(v, 1) for k, v in allocation_qty.items()},
+            "liabilities": {k: round(v, 1) for k, v in allocation_liability.items()}
+        }
     }
 
 if __name__ == "__main__":

@@ -9,6 +9,11 @@ interface AnalyticsData {
     gross_assets: number;
     liabilities: number;
     allocation: Record<string, number>;
+    composition: {
+        by_value: Record<string, number>;
+        by_quantity: Record<string, number>;
+        liabilities: Record<string, number>;
+    };
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
@@ -16,6 +21,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 export default function DashboardPage() {
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [chartFilter, setChartFilter] = useState<'VALUE' | 'QUANTITY' | 'LIABILITY'>('VALUE');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -34,10 +40,19 @@ export default function DashboardPage() {
     if (loading) return <div className="text-center p-10">Loading Dashboard...</div>;
     if (!data) return <div className="text-center p-10">No Data Available</div>;
 
-    const chartData = Object.entries(data.allocation).map(([key, value]) => ({
-        name: key.replace('_', ' '),
-        value: value
-    }));
+    const getChartData = () => {
+        if (!data.composition) return []; // Fallback for old API response
+
+        let source: Record<string, number> = {};
+        if (chartFilter === 'VALUE') source = data.composition.by_value;
+        else if (chartFilter === 'QUANTITY') source = data.composition.by_quantity;
+        else if (chartFilter === 'LIABILITY') source = data.composition.liabilities;
+
+        return Object.entries(source).map(([key, value]) => ({
+            name: key.replace('_', ' '),
+            value: value
+        }));
+    };
 
     return (
         <div>
@@ -96,13 +111,38 @@ export default function DashboardPage() {
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Asset Allocation Chart */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-[400px]">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Asset Allocation</h3>
-                    {chartData.length > 0 ? (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-[450px]">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">Portfolio Breakdown</h3>
+
+                        {/* Filter Controls */}
+                        <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg">
+                            <button
+                                onClick={() => setChartFilter('VALUE')}
+                                className={`px-2 py-1 text-xs font-medium rounded ${chartFilter === 'VALUE' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}
+                            >
+                                Value
+                            </button>
+                            <button
+                                onClick={() => setChartFilter('QUANTITY')}
+                                className={`px-2 py-1 text-xs font-medium rounded ${chartFilter === 'QUANTITY' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}
+                            >
+                                Quantity
+                            </button>
+                            <button
+                                onClick={() => setChartFilter('LIABILITY')}
+                                className={`px-2 py-1 text-xs font-medium rounded ${chartFilter === 'LIABILITY' ? 'bg-white shadow text-red-600' : 'text-gray-500'}`}
+                            >
+                                Liabilities
+                            </button>
+                        </div>
+                    </div>
+
+                    {getChartData().length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
-                                    data={chartData}
+                                    data={getChartData()}
                                     cx="50%"
                                     cy="50%"
                                     innerRadius={60}
@@ -111,7 +151,7 @@ export default function DashboardPage() {
                                     paddingAngle={5}
                                     dataKey="value"
                                 >
-                                    {chartData.map((_, index) => (
+                                    {getChartData().map((_, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
@@ -121,7 +161,8 @@ export default function DashboardPage() {
                         </ResponsiveContainer>
                     ) : (
                         <div className="h-full flex items-center justify-center text-gray-400">
-                            No assets to display
+                            {chartFilter === 'QUANTITY' ? 'No Stocks/Mutual Funds found' :
+                                chartFilter === 'LIABILITY' ? 'No Liabilities found' : 'No assets to display'}
                         </div>
                     )}
                 </div>

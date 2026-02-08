@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useForm } from 'react-hook-form';
+import { Trash2, Pencil } from 'lucide-react';
 
 interface AssetParams {
     name: string;
@@ -28,6 +29,8 @@ export default function PortfolioPage() {
     const [loading, setLoading] = useState(true);
     const [assetType, setAssetType] = useState<AssetType>('STOCK');
 
+    const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
+
     const fetchAssets = async () => {
         try {
             const res = await api.get('/assets');
@@ -43,48 +46,83 @@ export default function PortfolioPage() {
         fetchAssets();
     }, []);
 
+    const handleEdit = (asset: any) => {
+        setEditingAssetId(asset.id);
+        setAssetType(asset.type);
+
+        // Pre-fill form
+        const defaultValues: Partial<AssetParams> = {
+            name: asset.name,
+        };
+
+        if (asset.type === 'STOCK' || asset.type === 'MUTUAL_FUND') {
+            defaultValues.symbol = asset.investmentDetails?.symbol;
+            defaultValues.quantity = asset.investmentDetails?.quantity;
+            defaultValues.price = asset.investmentDetails?.averageBuyPrice; // buyPrice maps to price field
+        } else if (asset.type === 'FIXED_DEPOSIT') {
+            defaultValues.principalAmount = asset.fdDetails?.principalAmount;
+            defaultValues.interestRate = asset.fdDetails?.interestRate;
+            defaultValues.startDate = asset.fdDetails?.startDate ? new Date(asset.fdDetails.startDate).toISOString().split('T')[0] : '';
+            defaultValues.maturityDate = asset.fdDetails?.maturityDate ? new Date(asset.fdDetails.maturityDate).toISOString().split('T')[0] : '';
+        } else if (asset.type === 'LOAN') {
+            defaultValues.principalAmount = asset.loanDetails?.principalAmount;
+            defaultValues.interestRate = asset.loanDetails?.interestRate;
+            defaultValues.startDate = asset.loanDetails?.startDate ? new Date(asset.loanDetails.startDate).toISOString().split('T')[0] : '';
+            defaultValues.tenureMonths = asset.loanDetails?.tenureMonths;
+        }
+
+        reset(defaultValues as AssetParams);
+        // Scroll to form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     const onSubmit = async (data: AssetParams) => {
         try {
             const commonData = { name: data.name };
 
+            // Construct Payload
+            let payload: any = { ...commonData };
+
             if (assetType === 'STOCK') {
-                await api.post('/assets/stock', {
-                    ...commonData,
-                    symbol: data.symbol,
-                    quantity: Number(data.quantity),
-                    buyPrice: Number(data.price)
-                });
+                payload = { ...payload, symbol: data.symbol, quantity: Number(data.quantity), buyPrice: Number(data.price) };
             } else if (assetType === 'MUTUAL_FUND') {
-                await api.post('/assets/mutual-fund', {
-                    ...commonData,
-                    symbol: data.symbol,
-                    units: Number(data.quantity),
-                    nav: Number(data.price)
-                });
+                payload = { ...payload, symbol: data.symbol, units: Number(data.quantity), nav: Number(data.price) };
             } else if (assetType === 'FIXED_DEPOSIT') {
-                await api.post('/assets/fixed-deposit', {
-                    ...commonData,
-                    principalAmount: Number(data.principalAmount),
-                    interestRate: Number(data.interestRate),
-                    startDate: data.startDate,
-                    maturityDate: data.maturityDate
-                });
+                payload = { ...payload, principalAmount: Number(data.principalAmount), interestRate: Number(data.interestRate), startDate: data.startDate, maturityDate: data.maturityDate };
             } else if (assetType === 'LOAN') {
-                await api.post('/assets/loan', {
-                    ...commonData,
-                    principalAmount: Number(data.principalAmount),
-                    interestRate: Number(data.interestRate),
-                    startDate: data.startDate,
-                    tenureMonths: Number(data.tenureMonths)
-                });
+                payload = { ...payload, principalAmount: Number(data.principalAmount), interestRate: Number(data.interestRate), startDate: data.startDate, tenureMonths: Number(data.tenureMonths) };
             }
 
-            reset();
+            if (editingAssetId) {
+                // UPDATE logic
+                await api.patch(`/assets/${editingAssetId}`, payload);
+                alert(`${assetType.replace('_', ' ')} Updated Successfully!`);
+            } else {
+                // CREATE logic
+                if (assetType === 'STOCK') await api.post('/assets/stock', payload);
+                else if (assetType === 'MUTUAL_FUND') await api.post('/assets/mutual-fund', payload);
+                else if (assetType === 'FIXED_DEPOSIT') await api.post('/assets/fixed-deposit', payload);
+                else if (assetType === 'LOAN') await api.post('/assets/loan', payload);
+
+                alert(`${assetType.replace('_', ' ')} Added Successfully!`);
+            }
+
+            setEditingAssetId(null);
+            reset({
+                name: '',
+                symbol: '',
+                quantity: '' as any,
+                price: '' as any,
+                principalAmount: '' as any,
+                interestRate: '' as any,
+                startDate: '',
+                maturityDate: '',
+                tenureMonths: '' as any
+            }); // Clear form
             fetchAssets();
-            alert(`${assetType.replace('_', ' ')} Added Successfully!`);
         } catch (error) {
             console.error(error);
-            alert('Failed to add asset');
+            alert(`Failed to ${editingAssetId ? 'update' : 'add'} asset`);
         }
     };
 
@@ -93,16 +131,37 @@ export default function PortfolioPage() {
         return val ? `$${val.toLocaleString()}` : '-';
     };
 
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this asset?')) return;
+        try {
+            await api.delete(`/assets/${id}`);
+            fetchAssets();
+        } catch (error) {
+            console.error('Failed to delete asset', error);
+            alert('Failed to delete asset');
+        }
+    };
+
     return (
         <div className="p-8">
             <h1 className="text-3xl font-bold mb-6">My Portfolio</h1>
 
-            {/* Add Asset Form */}
-            <div className="bg-white p-6 rounded shadow mb-8 max-w-lg">
-                <h2 className="text-xl font-semibold mb-4">Add New Asset</h2>
+            {/* Add/Edit Asset Form */}
+            <div className="bg-white p-6 rounded shadow mb-8 max-w-lg border-t-4 border-blue-600">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">{editingAssetId ? 'Edit Asset' : 'Add New Asset'}</h2>
+                    {editingAssetId && (
+                        <button
+                            onClick={() => { setEditingAssetId(null); reset(); }}
+                            className="text-sm text-gray-500 hover:text-gray-700 underline"
+                        >
+                            Cancel Edit
+                        </button>
+                    )}
+                </div>
 
-                {/* Type Selector */}
-                <div className="flex space-x-2 mb-4 bg-gray-100 p-1 rounded-lg w-fit overflow-x-auto">
+                {/* Type Selector (Disable when editing to keep simple) */}
+                <div className={`flex space-x-2 mb-4 bg-gray-100 p-1 rounded-lg w-fit overflow-x-auto ${editingAssetId ? 'opacity-50 pointer-events-none' : ''}`}>
                     {(['STOCK', 'MUTUAL_FUND', 'FIXED_DEPOSIT', 'LOAN'] as AssetType[]).map((type) => (
                         <button
                             key={type}
@@ -213,8 +272,8 @@ export default function PortfolioPage() {
                         </>
                     )}
 
-                    <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 font-medium">
-                        Add {assetType.replace('_', ' ')}
+                    <button type="submit" className={`w-full text-white p-2 rounded font-medium transition-colors ${editingAssetId ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                        {editingAssetId ? 'Update Asset' : `Add ${assetType.replace('_', ' ')}`}
                     </button>
                 </form>
             </div>
@@ -230,11 +289,12 @@ export default function PortfolioPage() {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value / EMI</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {assets.map((asset) => (
-                                <tr key={asset.id}>
+                                <tr key={asset.id} className={editingAssetId === asset.id ? 'bg-blue-50' : ''}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                             ${asset.type === 'STOCK' ? 'bg-green-100 text-green-800' :
@@ -262,6 +322,22 @@ export default function PortfolioPage() {
                                         ) : (
                                             <span>{formatCurrency(asset.investmentDetails?.averageBuyPrice)}</span>
                                         )}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                                        <button
+                                            onClick={() => handleEdit(asset)}
+                                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                                            title="Edit Asset"
+                                        >
+                                            <Pencil className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(asset.id)}
+                                            className="text-red-600 hover:text-red-900 transition-colors"
+                                            title="Delete Asset"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
                                     </td>
                                 </tr>
                             ))}

@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { AssetsService } from './assets.service';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { CreateMutualFundDto } from './dto/create-mutual-fund.dto';
 import { CreateFixedDepositDto } from './dto/create-fixed-deposit.dto';
 import { CreateLoanDto } from './dto/create-loan.dto';
+import { UpdateAssetDto } from './dto/update-asset.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('assets')
@@ -34,5 +35,15 @@ export class AssetsController {
     @Get()
     findAll(@Request() req) {
         return this.assetsService.findAll(req.user.id);
+    }
+
+    @Delete(':id')
+    remove(@Request() req, @Param('id') id: string) {
+        return this.assetsService.remove(id, req.user.id);
+    }
+
+    @Patch(':id')
+    update(@Request() req, @Param('id') id: string, @Body() updateAssetDto: UpdateAssetDto) {
+        return this.assetsService.update(id, req.user.id, updateAssetDto);
     }
 }
