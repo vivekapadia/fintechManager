@@ -20,5 +20,5 @@ RUN npx nest build
 
 EXPOSE 3000
 
-# Start command for development (handles compilation)
-CMD ["npm", "run", "start:dev"]
+# Start command for production
+CMD ["node", "dist/main"]
