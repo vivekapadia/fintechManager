@@ -9,7 +9,12 @@ import { AppModule } from './app.module';
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     // Enable Cross-Origin Resource Sharing (CORS) to allow requests from the React frontend (port 5173)
-    app.enableCors();
+    // Enable Cross-Origin Resource Sharing (CORS)
+    app.enableCors({
+        origin: true, // Allow all origins (reflects the request origin)
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+        credentials: true,
+    });
     await app.listen(3000, '0.0.0.0');
     console.log(`Application is running on: ${await app.getUrl()}`);
 }
