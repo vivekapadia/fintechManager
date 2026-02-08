@@ -6,6 +6,7 @@ on:
     paths:
       - "apps/web/**"
       - ".github/workflows/deploy.yml"
+  workflow_dispatch: # Enable manual trigger
 
 permissions:
   contents: write
