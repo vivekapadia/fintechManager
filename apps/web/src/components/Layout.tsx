@@ -1,6 +1,6 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Wallet, LogOut } from 'lucide-react';
+import { LayoutDashboard, Wallet, LogOut, FileText } from 'lucide-react';
 
 export default function Layout() {
     const { logout, user } = useAuth();
@@ -30,8 +30,8 @@ export default function Layout() {
                                 <Link
                                     to="/dashboard"
                                     className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/dashboard')
-                                            ? 'border-blue-500 text-gray-900'
-                                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                        ? 'border-blue-500 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                         }`}
                                 >
                                     <LayoutDashboard className="w-4 h-4 mr-2" />
@@ -40,12 +40,22 @@ export default function Layout() {
                                 <Link
                                     to="/portfolio"
                                     className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/portfolio')
-                                            ? 'border-blue-500 text-gray-900'
-                                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                        ? 'border-blue-500 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                         }`}
                                 >
                                     <Wallet className="w-4 h-4 mr-2" />
                                     Portfolio
+                                </Link>
+                                <Link
+                                    to="/reports"
+                                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/reports')
+                                        ? 'border-blue-500 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                        }`}
+                                >
+                                    <FileText className="w-4 h-4 mr-2" />
+                                    Reports
                                 </Link>
                             </div>
                         </div>

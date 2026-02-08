@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { Link } from 'react-router-dom';
-import { ArrowRight, TrendingUp, DollarSign, Briefcase } from 'lucide-react';
+import { TrendingUp, DollarSign, Briefcase } from 'lucide-react';
 
 interface AnalyticsData {
     net_worth: number;
@@ -58,9 +57,6 @@ export default function DashboardPage() {
         <div>
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-900">Financial Overview</h1>
-                <Link to="/portfolio" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center shadow-sm transition-colors">
-                    Manage Portfolio <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
             </div>
 
             {/* Summary Cards */}

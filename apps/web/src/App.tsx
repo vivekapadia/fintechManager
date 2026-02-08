@@ -5,6 +5,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import PortfolioPage from './pages/portfolio/PortfolioPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
+import ReportsPage from './pages/reports/ReportsPage';
 import Layout from './components/Layout';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
                         <Route element={<Layout />}>
                             <Route path="/dashboard" element={<DashboardPage />} />
                             <Route path="/portfolio" element={<PortfolioPage />} />
+                            <Route path="/reports" element={<ReportsPage />} />
                             <Route path="/" element={<Navigate to="/dashboard" replace />} />
                         </Route>
                     </Route>

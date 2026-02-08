@@ -5,6 +5,7 @@ import { HealthModule } from './health/health.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { AssetsModule } from './assets/assets.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
     imports: [
@@ -13,7 +14,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
         AnalyticsModule, // New Module
         PrismaModule,
         HealthModule,
-        PrometheusModule.register() // Exposes /metrics endpoint
+        PrometheusModule.register(),
+        TransactionsModule // Exposes /metrics endpoint
     ],
     controllers: [],
     providers: [],
