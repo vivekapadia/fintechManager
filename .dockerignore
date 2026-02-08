@@ -1,0 +1,16 @@
+.git
+.gitignore
+.dockerignore
+.env
+node_modules
+npm-debug.log
+Dockerfile
+docker-compose.yml
+
+README.md
+docs/
+
+# Ignore venv and cache but keep source
+apps/engine/.venv
+apps/engine/__pycache__
+apps/engine/*.pyc
